@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta name="author" content="Yuen-Chi Lian" />
+        <link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.2.0/build/cssreset/reset-context-min.css">
+        <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Nobile" type="text/css">
+        <link rel="stylesheet/less" type="text/css" media="screen" href="assets/css/main.less">
+        <script type="text/javascript" src="assets/js/less.js"></script>
+        <script type="text/javascript" src="assets/js/underscore.js"></script>
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+        <script type="text/javascript" src="assets/js/mvc.js"></script>
+    </head>
+    <body>
+
+        <div>
+
+            <h1>Yes! $ Calculator</h1>
+            <sub id="latest_rate">Latest rate <a href="https://www.yes.my/portal/public/ytlc/sayyes" target="__new">here</a>.</sub>
+
+            <div id="result"></div>
+
+            <input name="usage" type="number" required="required" value="1024" min="0.0" autofocus="true" /><span>GB</span>
+            <br/>
+            <input name="calculate" type="submit" value="Calculate" />
+
+            <script type="text/javascript">
+
+                var yescalc = {
+
+                    values: {
+                        tiers: {
+                            0:      0.0300,
+                            2560:   0.0264,
+                            3072:   0.0225,
+                            4096:   0.0210
+                        }
+                    },
+
+                    models: {
+                        calculator: {
+                            requires: ['tiers'],
+                            facade: (function(){
+                                return {
+                                    init: function(){
+                                    },
+                                    calculate: function(megabytes){
+                                        tiers = _.keys(yescalc.values.tiers).reverse();
+                                        tier = _.select(tiers, function(v){ return megabytes >= v; }).shift();
+                                        price = yescalc.values.tiers[tier] * megabytes;
+                                        price_orig = yescalc.values.tiers[0] * megabytes;
+
+                                        return {
+                                            'rate': yescalc.values.tiers[tier],
+                                            'price': price,
+                                            'price_orig': price_orig
+                                        };
+                                    },
+                                    reset: function(){
+                                    }
+                                }
+                            })()
+                        }
+                    },
+                    views: {
+                        display: {
+                            element: $('#result'),
+                            mediator:{
+                                init: function(){
+                                    $(this.element).html('');
+                                },
+                                calculated: function(result){
+                                    $(this.element).html(
+                                        '<span>' +
+                                        'You have to pay ' + result.price.toFixed(2) +
+                                        ' (rebate: ' + (result.price_orig - result.price).toFixed(2) + ')' +
+                                        '</span>'
+                                    );
+                                }
+                            }
+                        },
+
+                        calculate: {
+                            element: $('input[name=calculate]'),
+                            mediator: {
+                                init: function(){
+                                    var that = this;
+                                    $(this.element).click(function(){
+                                        // Alert the 'calculate' controller.
+                                        that.dispatch('calculate', [(1024 * $('input[name=usage]').val())]);
+                                        return false;
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    controllers: {
+                        calculate: {
+                            requires: ['calculator'],
+                            command: function(megabytes){
+                                this.dispatch('calculated', [this.calculator.calculate(megabytes)]);
+                            }
+                        }
+                    }
+                };
+
+                var app = mvc(yescalc);
+            </script>
+                
+        </div>
+
+    </body>
+
+    <footer>
+        <p>This tool is built by <a href="http://about.me/yclian" rel="technicalauthor">Yuen-Chi Lian</a> using the awesome
+            <a href="http://github.com/rlayte/mvc.js" target="__new">mvc.js</a> and
+            <a href="http://github.com/cloudhead/less.js" target="__new">less.js</a>.</p>
+        <p><a href="http://github.com/yclian/yescalc/raw/master/LICENSE.txt">License</a> | Copyright &copy; 2010. All Rights Reserved.</p>
+    </footer>
+</html>
